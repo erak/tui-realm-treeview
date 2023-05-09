@@ -246,8 +246,8 @@ use tuirealm::tui::{layout::Rect, widgets::Block};
 use tuirealm::{Frame, MockComponent, State, StateValue};
 
 // -- type override
-pub type Node = OrangeNode<String, String>;
-pub type Tree = OrangeTree<String, String>;
+pub type Node<T> = OrangeNode<String, T>;
+pub type Tree<T> = OrangeTree<String, T>;
 
 // -- props
 
@@ -265,25 +265,25 @@ pub const TREE_CMD_CLOSE: &str = "c";
 /// ## TreeView
 ///
 /// Tree view Mock component for tui-realm
-pub struct TreeView {
+pub struct TreeView<T: AsRef<str>> {
     props: Props,
     states: TreeState,
     /// The actual Tree data structure. You can access this from your Component to operate on it
     /// for example after a certain events.
-    tree: Tree,
+    tree: Tree<T>,
 }
 
-impl Default for TreeView {
+impl<T: Default + AsRef<str>> Default for TreeView<T> {
     fn default() -> Self {
         Self {
             props: Props::default(),
             states: TreeState::default(),
-            tree: Tree::new(Node::new(String::new(), String::new())),
+            tree: Tree::new(Node::new(String::new(), T::default())),
         }
     }
 }
 
-impl TreeView {
+impl<T: AsRef<str>> TreeView<T> {
     // -- constructors
 
     /// ### foreground
@@ -398,7 +398,7 @@ impl TreeView {
     /// ### with_tree
     ///
     /// Set tree to use as data
-    pub fn with_tree(mut self, tree: Tree) -> Self {
+    pub fn with_tree(mut self, tree: Tree<T>) -> Self {
         self.tree = tree;
         self
     }
@@ -408,14 +408,14 @@ impl TreeView {
     /// ### tree
     ///
     /// Get a reference to tree
-    pub fn tree(&self) -> &Tree {
+    pub fn tree(&self) -> &Tree<T> {
         &self.tree
     }
 
     /// ### tree_mut
     ///
     /// Get mutable reference to tree
-    pub fn tree_mut(&mut self) -> &mut Tree {
+    pub fn tree_mut(&mut self) -> &mut Tree<T> {
         &mut self.tree
     }
 
@@ -423,7 +423,7 @@ impl TreeView {
     ///
     /// Set new tree in component.
     /// Current state is preserved if `PRESERVE_STATE` is set to `AttrValue::Flag(true)`
-    pub fn set_tree(&mut self, tree: Tree) {
+    pub fn set_tree(&mut self, tree: Tree<T>) {
         self.tree = tree;
         self.states.tree_changed(
             self.tree.root(),
@@ -478,7 +478,7 @@ impl TreeView {
 
 // -- mock
 
-impl MockComponent for TreeView {
+impl<T: AsRef<str>> MockComponent for TreeView<T> {
     fn view(&mut self, frame: &mut Frame, area: Rect) {
         if self.props.get_or(Attribute::Display, AttrValue::Flag(true)) == AttrValue::Flag(true) {
             let foreground = self

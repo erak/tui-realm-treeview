@@ -25,6 +25,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+use std::convert::AsRef;
 use super::{Node, Tree, TreeState};
 
 use tuirealm::tui::{
@@ -38,7 +39,7 @@ use unicode_width::UnicodeWidthStr;
 /// ## TreeWidget
 ///
 /// tui-rs widget implementation of a tree view
-pub struct TreeWidget<'a> {
+pub struct TreeWidget<'a, T: AsRef<str>> {
     /// Block properties
     block: Option<Block<'a>>,
     /// Style for tree
@@ -50,14 +51,14 @@ pub struct TreeWidget<'a> {
     /// Spaces to use for indentation
     indent_size: usize,
     /// Tree to render
-    tree: &'a Tree,
+    tree: &'a Tree<T>,
 }
 
-impl<'a> TreeWidget<'a> {
+impl<'a, T: AsRef<str>> TreeWidget<'a, T> {
     /// ### new
     ///
     /// Setup a new `TreeWidget`
-    pub fn new(tree: &'a Tree) -> Self {
+    pub fn new(tree: &'a Tree<T>) -> Self {
         Self {
             block: None,
             style: Style::default(),
@@ -116,14 +117,14 @@ struct Render {
     skip_rows: usize,
 }
 
-impl<'a> Widget for TreeWidget<'a> {
+impl<'a, T: AsRef<str>> Widget for TreeWidget<'a, T> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut state = TreeState::default();
         StatefulWidget::render(self, area, buf, &mut state);
     }
 }
 
-impl<'a> StatefulWidget for TreeWidget<'a> {
+impl<'a, T: AsRef<str>> StatefulWidget for TreeWidget<'a, T> {
     type State = TreeState;
 
     fn render(mut self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -151,10 +152,10 @@ impl<'a> StatefulWidget for TreeWidget<'a> {
     }
 }
 
-impl<'a> TreeWidget<'a> {
+impl<'a, T: AsRef<str>> TreeWidget<'a, T> {
     fn iter_nodes(
         &self,
-        node: &Node,
+        node: &Node<T>,
         mut area: Rect,
         buf: &mut Buffer,
         state: &TreeState,
@@ -180,7 +181,7 @@ impl<'a> TreeWidget<'a> {
 
     fn render_node(
         &self,
-        node: &Node,
+        node: &Node<T>,
         area: Rect,
         buf: &mut Buffer,
         state: &TreeState,
@@ -279,8 +280,8 @@ impl<'a> TreeWidget<'a> {
         ///
         /// Inner recursive call to calc rows to skip.
         /// Returns the rows to skip and whether the item has been found (this last oneshould be ignored)
-        fn calc_rows_to_skip_r(
-            node: &Node,
+        fn calc_rows_to_skip_r<T: AsRef<str>>(
+            node: &Node<T>,
             state: &TreeState,
             height: u16,
             selected: &str,

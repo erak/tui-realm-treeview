@@ -21,6 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+pub use orange_trees::{Node as OrangeNode, Tree as OrangeTree};
+use tuirealm::Frame;
+
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tui_realm_stdlib::{Input, Phantom};
@@ -34,11 +37,41 @@ use tuirealm::{
     SubClause, SubEventClause, Update,
 };
 // tui
-use tuirealm::tui::layout::{Constraint, Direction as LayoutDirection, Layout};
+use tuirealm::tui::layout::{Constraint, Direction as LayoutDirection, Layout, Rect};
 // treeview
-use tui_realm_treeview::{Node, Tree, TreeView, TREE_CMD_CLOSE, TREE_CMD_OPEN};
+use tui_realm_treeview::{TreeView, TREE_CMD_CLOSE, TREE_CMD_OPEN};
+
+pub type Node = OrangeNode<String, TreeObject>;
+pub type Tree = OrangeTree<String, TreeObject>;
 
 const MAX_DEPTH: usize = 3;
+
+#[derive(Default, Clone)]
+pub enum TreeObject {
+    #[default]
+    None,
+    Author { id: u16, display: String },
+    Revision { id: u16, display: String },
+    Commit { id: u16, display: String },
+    
+}
+
+impl<'a> From<&'a TreeObject> for &'a str {
+    fn from(object: &TreeObject) -> &str {
+        match object {
+            TreeObject::Author { id, display } => { display }
+            TreeObject::Revision { id, display } => { display }
+            TreeObject::Commit { id, display } => { display }
+            TreeObject::None => { "None" }
+        }
+    }
+}
+
+impl AsRef<str> for TreeObject {
+    fn as_ref(&self) -> &str {
+        self.into()
+    }
+}
 
 // -- message
 #[derive(Debug, PartialEq)]
@@ -136,18 +169,20 @@ impl Model {
     }
 
     fn dir_tree(p: &Path, depth: usize) -> Node {
-        let name: String = match p.file_name() {
-            None => "/".to_string(),
-            Some(n) => n.to_string_lossy().into_owned().to_string(),
-        };
-        let mut node: Node = Node::new(p.to_string_lossy().into_owned(), name);
-        if depth > 0 && p.is_dir() {
-            if let Ok(e) = std::fs::read_dir(p) {
-                e.flatten()
-                    .for_each(|x| node.add_child(Self::dir_tree(x.path().as_path(), depth - 1)));
-            }
-        }
-        node
+        // let name: String = match p.file_name() {
+        //     None => "/".to_string(),
+        //     Some(n) => n.to_string_lossy().into_owned().to_string(),
+        // };
+        // let mut node: Node = Node::new(p.to_string_lossy().into_owned(), name);
+        // if depth > 0 && p.is_dir() {
+        //     if let Ok(e) = std::fs::read_dir(p) {
+        //         e.flatten()
+        //             .for_each(|x| node.add_child(Self::dir_tree(x.path().as_path(), depth - 1)));
+        //     }
+        // }
+        // node
+
+        Node::new("-".into(), TreeObject::Author { id: 0, display: "sdj".into() })
     }
 
     fn view(&mut self) {
@@ -255,7 +290,7 @@ impl Update<Msg> for Model {
 
 #[derive(MockComponent)]
 pub struct FsTree {
-    component: TreeView,
+    component: TreeView<TreeObject>,
 }
 
 impl FsTree {
@@ -266,7 +301,7 @@ impl FsTree {
             _ => tree.root().id().to_string(),
         };
         FsTree {
-            component: TreeView::default()
+            component: TreeView::<TreeObject>::default()
                 .foreground(Color::Reset)
                 .borders(
                     Borders::default()
@@ -274,11 +309,11 @@ impl FsTree {
                         .modifiers(BorderType::Rounded),
                 )
                 .inactive(Style::default().fg(Color::Gray))
-                .indent_size(3)
+                .indent_size(2)
                 .scroll_step(6)
                 .title(tree.root().id(), Alignment::Left)
                 .highlighted_color(Color::LightYellow)
-                .highlight_symbol("🦄")
+                // .highlight_symbol("🦄")
                 .with_tree(tree)
                 .initial_node(initial_node),
         }
